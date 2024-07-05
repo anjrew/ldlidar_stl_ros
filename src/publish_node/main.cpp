@@ -21,8 +21,8 @@
 #include "ros_api.h"
 #include "ldlidar_driver.h"
 
-void  ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq, 
-    LaserScanSetting& setting, ros::Publisher& lidarpub);
+void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq, 
+    LaserScanSetting& setting, ros::Publisher& lidarpub, double rotation_angle);
 
 uint64_t GetSystemTimeStamp(void);
 
@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
   LaserScanSetting setting;
   ldlidar::LDType type_name;
 	
+  double rotation_angle;
+  nh_private.param("rotation_angle", rotation_angle, 0.0);
   nh_private.getParam("product_name", product_name);
 	nh_private.getParam("topic_name", topic_name);
   nh_private.param("frame_id", setting.frame_id, std::string("base_laser"));
@@ -60,6 +62,7 @@ int main(int argc, char **argv) {
   ROS_INFO("<enable_angle_crop_func>: %s", (setting.enable_angle_crop_func?"true":"false"));
   ROS_INFO("<angle_crop_min>: %f", setting.angle_crop_min);
   ROS_INFO("<angle_crop_max>: %f", setting.angle_crop_max);
+  ROS_INFO("<rotation_angle>: %f", rotation_angle);
 
   if (product_name == "LDLiDAR_LD06") {
     type_name = ldlidar::LDType::LD_06; 
@@ -102,7 +105,7 @@ int main(int argc, char **argv) {
     switch (ldlidarnode->GetLaserScanData(laser_scan_points, 1500)){
       case ldlidar::LidarStatus::NORMAL: 
         ldlidarnode->GetLidarScanFreq(lidar_scan_freq);
-        ToLaserscanMessagePublish(laser_scan_points, lidar_scan_freq, setting, lidar_pub);
+        ToLaserscanMessagePublish(laser_scan_points, lidar_scan_freq, setting, lidar_pub, rotation_angle);
         break;
       case ldlidar::LidarStatus::DATA_TIME_OUT:
         ROS_ERROR("get ldlidar data is time out, please check your lidar device.");
@@ -124,8 +127,9 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void  ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq, 
-    LaserScanSetting& setting, ros::Publisher& lidarpub) {
+void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq, 
+    LaserScanSetting& setting, ros::Publisher& lidarpub, double rotation_angle) {
+
   float angle_min, angle_max, range_min, range_max, angle_increment;
   float scan_time;
   ros::Time start_scan_time;
@@ -185,6 +189,12 @@ void  ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
           intensity = std::numeric_limits<float>::quiet_NaN();
         }
       }
+      
+      // Apply rotation
+      float rotated_angle = dir_angle + rotation_angle;
+      if (rotated_angle >= 360.0) rotated_angle -= 360.0;
+      if (rotated_angle < 0.0) rotated_angle += 360.0;
+
 
       float angle = ANGLE_TO_RADIAN(dir_angle); // Lidar angle unit form degree transform to radian
       int index = static_cast<int>(ceil((angle - angle_min) / angle_increment));
