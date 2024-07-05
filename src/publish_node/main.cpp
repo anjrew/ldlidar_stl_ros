@@ -196,7 +196,7 @@ void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
       if (rotated_angle < 0.0) rotated_angle += 360.0;
 
 
-      float angle = ANGLE_TO_RADIAN(dir_angle); // Lidar angle unit form degree transform to radian
+      float angle = ANGLE_TO_RADIAN(rotated_angle); // Lidar angle unit form degree transform to radian
       int index = static_cast<int>(ceil((angle - angle_min) / angle_increment));
       if (index < beam_size) {
         if (index < 0) {
