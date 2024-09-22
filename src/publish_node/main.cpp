@@ -163,13 +163,19 @@ void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
     output.intensities.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
     corrected_output.ranges.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
     corrected_output.intensities.assign(beam_size, std::numeric_limits<float>::quiet_NaN());
-
+    const float epsilon = 1e-6f; 
     for (auto point : src) {
-      float range = point.distance / 1000.f;
+      float range = point.distance / 1000.f; // Convert distance to meters
       float intensity = point.intensity;
       float dir_angle = point.angle;
 
       if ((point.distance == 0) && (point.intensity == 0)) {
+        range = std::numeric_limits<float>::quiet_NaN();
+        intensity = std::numeric_limits<float>::quiet_NaN();
+      }
+
+      // **A check for zero range values which assigns them to NaN**
+      if (std::abs(range) < epsilon) {
         range = std::numeric_limits<float>::quiet_NaN();
         intensity = std::numeric_limits<float>::quiet_NaN();
       }
