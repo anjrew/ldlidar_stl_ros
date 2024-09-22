@@ -195,13 +195,16 @@ void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
 
         int actual_index = setting.laser_scan_dir ? (beam_size - index - 1) : index;
 
-        if (std::isnan(output.ranges[actual_index])) {
+        if (std::isnan(output.ranges[actual_index]) || (range < output.ranges[actual_index])) {
           output.ranges[actual_index] = range;
-          corrected_output.ranges[actual_index] = range + correction_amount;
-        } else if (range < output.ranges[actual_index]) {
-          output.ranges[actual_index] = range;
-          corrected_output.ranges[actual_index] = range + correction_amount;
+
+          if (std::isnan(range)) {
+            corrected_output.ranges[actual_index] = std::numeric_limits<float>::quiet_NaN();
+          } else {
+            corrected_output.ranges[actual_index] = range + correction_amount;
+          }
         }
+
         output.intensities[actual_index] = intensity;
         corrected_output.intensities[actual_index] = intensity;
       }
