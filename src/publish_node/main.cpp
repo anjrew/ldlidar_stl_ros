@@ -180,16 +180,11 @@ void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
         intensity = std::numeric_limits<float>::quiet_NaN();
       }
 
-      if (setting.enable_angle_crop_func) {
-        if ((dir_angle >= setting.angle_crop_min) && (dir_angle <= setting.angle_crop_max)) {
-          range = std::numeric_limits<float>::quiet_NaN();
-          intensity = std::numeric_limits<float>::quiet_NaN();
-        }
-      }
 
       float rotated_angle = dir_angle + rotation_angle;
       if (rotated_angle >= 360.0) rotated_angle -= 360.0;
       if (rotated_angle < 0.0) rotated_angle += 360.0;
+
 
       float angle = ANGLE_TO_RADIAN(rotated_angle);
       int index = static_cast<int>(ceil((angle - angle_min) / angle_increment));
@@ -200,6 +195,16 @@ void ToLaserscanMessagePublish(ldlidar::Points2D& src, double lidar_spin_freq,
         }
 
         int actual_index = setting.laser_scan_dir ? (beam_size - index - 1) : index;
+
+        if (setting.enable_angle_crop_func) {
+          if ((rotated_angle >= setting.angle_crop_min) && (rotated_angle <= setting.angle_crop_max)) {
+            output.ranges[actual_index] = std::numeric_limits<float>::quiet_NaN();
+            corrected_output.ranges[actual_index] = std::numeric_limits<float>::quiet_NaN();
+            output.intensities[actual_index] = std::numeric_limits<float>::quiet_NaN();
+            corrected_output.intensities[actual_index] = std::numeric_limits<float>::quiet_NaN();
+            continue;
+          }
+        }
 
         if (std::isnan(output.ranges[actual_index]) || (range < output.ranges[actual_index])) {
           output.ranges[actual_index] = range;
